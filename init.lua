@@ -58,6 +58,8 @@ vim.opt.number = true
 vim.opt.relativenumber = true
 vim.opt.tabstop = 2
 vim.o.tabstop = 2
+vim.opt.shiftwidth = 2
+vim.opt.expandtab = true
 vim.opt.mouse = 'a'
 vim.opt.showmode = false
 
@@ -133,6 +135,7 @@ vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' }
 -- vim.keymap.set('n', '<down>', '<cmd>echo "Use j to move!!"<CR>')
 vim.keymap.set('n', 'j', 'gj')
 vim.keymap.set('n', 'k', 'gk')
+vim.keymap.set('x', 'p', 'P', { silent = true })
 -- Keybinds to make split navigation easier.
 --  Use CTRL+<hjkl> to switch between windows
 --
@@ -181,7 +184,7 @@ vim.opt.rtp:prepend(lazypath)
 -- NOTE: Here is where you install your plugins.
 require('lazy').setup({
   -- NOTE: Plugins can be added with a link (or for a github repo: 'owner/repo' link).
-  'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
+  -- 'tpope/vim-sleuth', -- Detect tabstop and shiftwidth automatically
 
   -- NOTE: Plugins can also be added by using a table,
   -- with the first argument being the link and the following
@@ -191,6 +194,7 @@ require('lazy').setup({
   --
 
   { 'nvim-java/nvim-java' },
+  --
   -- {
   --   'mfussenegger/nvim-jdtls',
   --   dependencies = {
@@ -200,6 +204,7 @@ require('lazy').setup({
   --     'jay-babu/mason-nvim-dap.nvim',
   --   },
   -- },
+
   {
     'theprimeagen/harpoon',
     branch = 'harpoon2',
@@ -420,6 +425,18 @@ require('lazy').setup({
       },
     },
   },
+  {
+    'lervag/vimtex',
+    lazy = true,
+    ft = 'tex',
+    -- tag = "v2.15", -- uncomment to pin to a specific release
+    init = function()
+      -- VimTeX configuration goes here, e.g.
+      vim.g.vimtex_view_method = 'zathura'
+      vim.g.vimtex_compiler_method = 'latexmk'
+      vim.g.vimtex_quickfix_ignore_filters = { 'Underfull', 'Overfull' }
+    end,
+  },
   { 'Bilal2453/luvit-meta', lazy = true },
   {
     -- Main LSP Configuration
@@ -574,7 +591,9 @@ require('lazy').setup({
       --  - settings (table): Override the default settings passed when initializing the server.
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
-        -- clangd = {},
+        clangd = {
+          mason = false,
+        },
         -- gopls = {},
         -- pyright = {},
         -- rust_analyzer = {},
@@ -587,6 +606,7 @@ require('lazy').setup({
         -- tsserver = {},
         --
         -- dartls = {},
+        -- clangd = {},
 
         lua_ls = {
           -- cmd = {...},
@@ -610,32 +630,6 @@ require('lazy').setup({
             },
           },
         },
-        -- ltex = {
-        --   capabilities = {
-        --     documentationFormat = { 'markdown', 'plaintext' },
-        --     snippetSupport = true,
-        --     preselectSupport = true,
-        --     insertReplaceSupport = true,
-        --     labelDetailsSupport = true,
-        --     deprecatedSupport = true,
-        --     commitCharactersSupport = true,
-        --     tagSupport = { valueSet = { 1 } },
-        --     resolveSupport = {
-        --       properties = {
-        --         'documentation',
-        --         'detail',
-        --         'additionalTextEdits',
-        --       },
-        --     },
-        --   },
-        --   cmd = { 'ltex-ls' },
-        --   filetypes = { 'tex', 'bib', 'markdown', 'org' },
-        --   settings = {
-        --     ltex = {
-        --       language = 'en-US',
-        --     },
-        --   },
-        -- },
       }
 
       -- Ensure the servers and tools above are installed
@@ -664,9 +658,39 @@ require('lazy').setup({
             server.capabilities = vim.tbl_deep_extend('force', {}, capabilities, server.capabilities or {})
             require('lspconfig')[server_name].setup(server)
           end,
+
           jdtls = function()
             require('java').setup {
               -- Your custom jdtls settings goes here
+              -- cmd = {
+              --   'java',
+              --   '-Declipse.application=org.eclipse.jdt.ls.core.id1',
+              --   '-Dosgi.bundles.defaultStartLevel=4',
+              --   '-Declipse.product=org.eclipse.jdt.ls.core.product',
+              --   '-Dlog.protocol=true',
+              --   '-Dlog.level=ALL',
+              --   '-Xms1g',
+              --   '-Xmx4g', -- Set the memory allocation to 4 GB
+              -- },
+              settings = {
+                java = {
+                  project = {
+                    referencedLibraries = {
+                      -- Glob patterns of paths to ignore
+                      '**/build/**/*.jar',
+                      '**/target/**/*.jar',
+                      '**/out/**/*.jar',
+                    },
+                  },
+                  workspace = {
+                    library = {
+                      -- This can be used to exclude other large directories
+                      '!**/node_modules/**',
+                      '!**/.git/**',
+                    },
+                  },
+                },
+              },
             }
 
             require('lspconfig').jdtls.setup {
@@ -675,11 +699,27 @@ require('lazy').setup({
           end,
         },
       }
+
       require('lspconfig').dartls.setup {
         capabilities = capabilities,
         cmd = { 'dart', 'language-server', '--protocol=lsp' },
         filetypes = { 'dart' },
         root_dir = require('lspconfig').util.root_pattern('pubspec.yaml', '.git'),
+      }
+
+      -- require('lspconfig').jdtls.setup {
+      --   cmd = { '/Users/madduxv/.local/share/nvim-kickstart/mason/bin/jdtls' },
+      --   settings = {
+      --     java = {},
+      --   },
+      -- }
+
+      require('lspconfig').clangd.setup {
+        filetypes = { 'c', 'cpp', 'objc', 'objcpp', 'asm', 'h', 'hpp' }, -- Add "asm" for assembly files
+        cmd = { 'clangd' },
+        on_attach = function(client, bufnr)
+          client.server_capabilities.documentFormattingProvider = false
+        end,
       }
     end,
   },
@@ -902,6 +942,7 @@ require('lazy').setup({
       --  Check out: https://github.com/echasnovski/mini.nvim
     end,
   },
+
   { -- Highlight, edit, and navigate code
     'nvim-treesitter/nvim-treesitter',
     build = ':TSUpdate',
