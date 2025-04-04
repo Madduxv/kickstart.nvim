@@ -425,6 +425,7 @@ require('lazy').setup({
       },
     },
   },
+  { 'benknoble/vim-mips', lazy = true, ft = 'asm' },
   {
     'lervag/vimtex',
     lazy = true,
@@ -715,7 +716,7 @@ require('lazy').setup({
       -- }
 
       require('lspconfig').clangd.setup {
-        filetypes = { 'c', 'cpp', 'objc', 'objcpp', 'asm', 'h', 'hpp' }, -- Add "asm" for assembly files
+        filetypes = { 'c', 'cpp', 'objc', 'objcpp', 'h', 'hpp' }, -- Add "asm" for assembly files
         cmd = { 'clangd' },
         on_attach = function(client, bufnr)
           client.server_capabilities.documentFormattingProvider = false
